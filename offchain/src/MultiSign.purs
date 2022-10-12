@@ -72,4 +72,3 @@ get signers = do
                     <> Constraints.mustPayToScript valHash unitDatum Constraints.DatumInline value
 
   pure {lookups, constraints}
-  -- buildBalanceSignAndSubmitTx lookups constraints >>= awaitTxConfirmed

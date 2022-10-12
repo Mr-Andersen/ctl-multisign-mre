@@ -44,9 +44,12 @@ main = launchAff_ do
 
       {lookups, constraints} <- MultiSign.get signers
       ubTx <- liftedE $ Lookups.mkUnbalancedTx lookups constraints
+      logInfo' "Made unbalanced Tx"
       bTx <- liftedE $ map unwrap <$> balanceTx ubTx
+      logInfo' "Balanced successfully"
       tx <- liftContractM "Unable to sign transaction" =<< signTransaction bTx
       txSigned <- signWith wallets tx
+      logInfo' "Signed successfully"
       submit (wrap txSigned) >>= awaitTxConfirmed
 
       pure unit

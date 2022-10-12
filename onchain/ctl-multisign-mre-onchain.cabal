@@ -63,9 +63,10 @@ common common-lang
 library
   import:          common-lang
   exposed-modules:
-    MultiSign
+    , MultiSign
   other-modules:
-    Data.Result
+    , Data.Result
+    , PlutusTx.Show
   build-depends:
     , plutus-ledger
     , plutus-ledger-api

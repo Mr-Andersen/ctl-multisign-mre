@@ -5,26 +5,43 @@ module MultiSign (script) where
 import PlutusTx.Prelude
 
 import Ledger (PaymentPubKeyHash (unPaymentPubKeyHash))
-import Plutus.V2.Ledger.Api (Script, ScriptContext (scriptContextTxInfo), fromCompiledCode)
+import Plutus.V2.Ledger.Api (Script, ScriptContext (scriptContextTxInfo), getPubKeyHash, fromCompiledCode)
 import Plutus.V2.Ledger.Contexts (txSignedBy)
 import PlutusTx (fromBuiltinData)
 import PlutusTx qualified (compile)
-import PlutusTx.Builtins (divideInteger)
 
 import Data.Result (err, foldResult)
+import PlutusTx.Show
 
 type MultiSignParams = [PaymentPubKeyHash]
 
+{-# INLINEABLE mkValidator #-}
 mkValidator :: MultiSignParams -> ScriptContext -> Bool
 mkValidator signers ctx =
-  traceIfFalse "Not enough signatures" (length signersPresent >= minSigners)
+  traceIfFalse errMessage (length signersPresent >= minSigners)
   where
     signersPresent, signersUnique :: [PaymentPubKeyHash]
     signersPresent = filter (txSignedBy (scriptContextTxInfo ctx) . unPaymentPubKeyHash) signersUnique
     signersUnique = nub signers
 
     minSigners :: Integer
-    minSigners = max 1 $ length signersUnique `divideInteger` 2
+    minSigners = max 1 $ length signersUnique `divide` 2
+
+    errMessage = mconcat
+      [ "Not enough signatures ("
+      , show (length signersPresent)
+      , "/"
+      , show minSigners
+      , "): ["
+      , intercalate "," $ show . getPubKeyHash . unPaymentPubKeyHash <$> signersPresent
+      , "]"
+      ]
+
+intercalate :: Monoid a => a -> [a] -> a
+intercalate sep = go mempty where
+  go acc [] = acc
+  go acc [x] = acc <> x
+  go acc (x : xs) = go (acc <> x <> sep) xs
 
 {-# INLINEABLE mkValidator' #-}
 mkValidator' :: BuiltinData -> BuiltinData -> BuiltinData -> BuiltinData -> ()
