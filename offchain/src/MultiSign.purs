@@ -3,13 +3,14 @@ module MultiSign where
 import Contract.Prelude
 
 import Contract.Address (PaymentPubKeyHash)
+import Contract.Log (logInfo')
 import Contract.Monad (Contract, liftContractM, liftedE, liftedM)
 import Contract.PlutusData
   ( Redeemer(Redeemer)
   , toData
   , unitDatum
   )
-import Contract.ScriptLookups (ScriptLookups)
+import Contract.ScriptLookups (ScriptLookups, mkUnbalancedTx)
 import Contract.ScriptLookups (validator, unspentOutputs) as Lookups
 import Contract.Scripts
   ( Validator(..)
@@ -21,7 +22,7 @@ import Contract.TextEnvelope
   ( TextEnvelopeType(PlutusScriptV2)
   , textEnvelopeBytes
   )
-import Contract.Transaction (awaitTxConfirmed)
+import Contract.Transaction (awaitTxConfirmed, balanceAndSignTxE, submit)
 import Contract.TxConstraints (TxConstraints)
 import Contract.TxConstraints (DatumPresence(DatumInline), mustPayToScript, mustSpendScriptOutput) as Constraints
 import Contract.Utxos (utxosAt)
@@ -30,7 +31,6 @@ import Data.Map (findMin) as Map
 import Types.Scripts (plutusV2Script)
 
 import ScriptsFFI (rawMultiSign)
-import Utils (buildBalanceSignAndSubmitTx, (<#))
 
 type MultiSignParams = Array PaymentPubKeyHash
 
@@ -52,7 +52,11 @@ init value signers = do
 
     constraints = Constraints.mustPayToScript valHash unitDatum Constraints.DatumInline value
 
-  buildBalanceSignAndSubmitTx lookups constraints >>= awaitTxConfirmed
+  ubTx <- liftedE $ mkUnbalancedTx lookups constraints
+  bsTx <- liftedE $ balanceAndSignTxE ubTx
+  txId <- submit bsTx
+  logInfo' $ "Tx ID: " <> show txId
+  awaitTxConfirmed txId
 
 get :: MultiSignParams -> Contract () { lookups :: ScriptLookups Void, constraints :: TxConstraints Void Void }
 get signers = do
@@ -67,7 +71,7 @@ get signers = do
       <> Lookups.unspentOutputs valUtxos
 
     redeemer = Redeemer $ toData signers
-    value = msUtxoResolved <# _.output <# _.amount
+    value = msUtxoResolved # unwrap >>> _.output >>> unwrap >>> _.amount
     constraints = Constraints.mustSpendScriptOutput msUtxo redeemer
       <> Constraints.mustPayToScript valHash unitDatum Constraints.DatumInline value
 

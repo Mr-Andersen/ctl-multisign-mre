@@ -6,16 +6,15 @@ import Contract.Address (PaymentPubKeyHash, ownPaymentPubKeyHash)
 import Contract.Log (logInfo')
 import Contract.Monad (Contract, launchAff_, liftContractM, liftedM, liftedE)
 import Contract.ScriptLookups (mkUnbalancedTx) as Lookups
-import Contract.Transaction (awaitTxConfirmed, balanceTx, signTransaction, submit)
+import Contract.Transaction (Transaction, awaitTxConfirmed, balanceTx, signTransaction, submit)
 import Contract.Value (lovelaceValueOf)
-import Contract.Wallet (withKeyWallet)
+import Contract.Wallet (KeyWallet, withKeyWallet)
 import Data.BigInt (fromInt) as BigInt
 import Data.UInt (fromInt) as UInt
 import Plutip.Server (runPlutipContract)
 import Plutip.Types (PlutipConfig)
 
 import MultiSign (init, get) as MultiSign
-import Utils (signWith, (<#))
 
 ownPaymentPubKeyHash' :: forall extra. Contract extra PaymentPubKeyHash
 ownPaymentPubKeyHash' = liftedM "cannot get own pubkey" ownPaymentPubKeyHash
@@ -30,11 +29,11 @@ main = launchAff_ do
   runPlutipContract config distribution \(alice /\ bob /\ claire) -> do
     logInfo' "Test.MMS.setSignatures: running"
     aliceHash <- withKeyWallet alice ownPaymentPubKeyHash'
-    logInfo' $ "Alice:  " <> show (aliceHash <# unwrap)
+    logInfo' $ "Alice:  " <> show (aliceHash # unwrap >>> unwrap)
     bobHash <- withKeyWallet bob ownPaymentPubKeyHash'
-    logInfo' $ "Bob:    " <> show (bobHash <# unwrap)
+    logInfo' $ "Bob:    " <> show (bobHash # unwrap >>> unwrap)
     claireHash <- withKeyWallet claire ownPaymentPubKeyHash'
-    logInfo' $ "Claire: " <> show (claireHash <# unwrap)
+    logInfo' $ "Claire: " <> show (claireHash # unwrap >>> unwrap)
 
     withKeyWallet alice do
       let
@@ -62,6 +61,18 @@ main = launchAff_ do
       submit (wrap txSigned) >>= awaitTxConfirmed
 
       pure unit
+
+signWith
+  :: forall extra t
+   . Foldable t
+  => t KeyWallet
+  -> Transaction
+  -> Contract extra Transaction
+signWith = flip $
+  foldM \tx wallet ->
+    withKeyWallet wallet do
+      liftedM "Unable to sign transaction" do
+        signTransaction tx
 
 config :: PlutipConfig
 config =
