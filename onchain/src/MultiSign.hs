@@ -38,6 +38,7 @@ mkValidator signers ctx =
             , "]"
             ]
 
+{-# INLINEABLE intercalate #-}
 intercalate :: Monoid a => a -> [a] -> a
 intercalate sep = go mempty
   where
