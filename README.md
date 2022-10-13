@@ -12,7 +12,7 @@ Error: ExUnitsEvaluationFailed: Script failures:
     2.  PT5
 ```
 
-### Run once with Nix:
+### Run once with Nix (will download&build more than Spago method):
 
 ```sh
 nix build .#checks.x86_64-linux.ctl-multisign-mre --no-link -L
