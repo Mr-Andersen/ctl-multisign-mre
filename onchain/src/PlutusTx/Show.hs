@@ -11,19 +11,20 @@ import PlutusTx.Foldable hiding (foldr)
 import PlutusTx.List
 import PlutusTx.Prelude hiding (foldr)
 
-{-# INLINABLE splitAt #-}
+{-# INLINEABLE splitAt #-}
+
 -- | Plutus Tx version of 'Data.List.splitAt'.
 splitAt :: Integer -> [a] -> ([a], [a])
 splitAt n xs
-  | n <= 0    = ([], xs)
-  | otherwise = go n xs
+    | n <= 0 = ([], xs)
+    | otherwise = go n xs
   where
     go :: Integer -> [a] -> ([a], [a])
-    go _ []     = ([], [])
-    go m (y:ys)
-      | m == 1 = ([y], ys)
-      | otherwise = case go (Builtins.subtractInteger m 1) ys of
-          (zs, ws) -> (y:zs, ws)
+    go _ [] = ([], [])
+    go m (y : ys)
+        | m == 1 = ([y], ys)
+        | otherwise = case go (Builtins.subtractInteger m 1) ys of
+            (zs, ws) -> (y : zs, ws)
 
 class Show a where
     {-# MINIMAL showsPrec | show #-}
@@ -82,21 +83,22 @@ instance Show Builtins.Integer where
         alg digit acc =
             showString
                 ( if
-                    | digit == 0 -> "0"
-                    | digit == 1 -> "1"
-                    | digit == 2 -> "2"
-                    | digit == 3 -> "3"
-                    | digit == 4 -> "4"
-                    | digit == 5 -> "5"
-                    | digit == 6 -> "6"
-                    | digit == 7 -> "7"
-                    | digit == 8 -> "8"
-                    | digit == 9 -> "9"
-                    | otherwise  -> "<invalid digit>"
+                        | digit == 0 -> "0"
+                        | digit == 1 -> "1"
+                        | digit == 2 -> "2"
+                        | digit == 3 -> "3"
+                        | digit == 4 -> "4"
+                        | digit == 5 -> "5"
+                        | digit == 6 -> "6"
+                        | digit == 7 -> "7"
+                        | digit == 8 -> "8"
+                        | digit == 9 -> "9"
+                        | otherwise -> "<invalid digit>"
                 )
                 . acc
 
 {-# INLINEABLE toDigits #-}
+
 -- | Convert a non-negative integer to individual digits.
 toDigits :: Builtins.Integer -> [Builtins.Integer]
 toDigits = go []
@@ -122,14 +124,14 @@ instance Show Builtins.BuiltinByteString where
         toHex :: Integer -> ShowS
         toHex x =
             if
-                | x <= 9    -> showsPrec 0 x
-                | x == 10   -> showString "a"
-                | x == 11   -> showString "b"
-                | x == 12   -> showString "c"
-                | x == 13   -> showString "d"
-                | x == 14   -> showString "e"
-                | x == 15   -> showString "f"
-                | otherwise -> showString "<invalid byte>"
+                    | x <= 9 -> showsPrec 0 x
+                    | x == 10 -> showString "a"
+                    | x == 11 -> showString "b"
+                    | x == 12 -> showString "c"
+                    | x == 13 -> showString "d"
+                    | x == 14 -> showString "e"
+                    | x == 15 -> showString "f"
+                    | otherwise -> showString "<invalid byte>"
         alg :: Builtins.Integer -> ShowS -> ShowS
         alg i acc = showWord8 (Builtins.indexByteString s i) . acc
 

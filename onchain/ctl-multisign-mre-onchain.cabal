@@ -62,11 +62,11 @@ common common-lang
 
 library
   import:          common-lang
-  exposed-modules:
-    , MultiSign
+  exposed-modules: MultiSign
   other-modules:
-    , Data.Result
-    , PlutusTx.Show
+    Data.Result
+    PlutusTx.Show
+
   build-depends:
     , plutus-ledger
     , plutus-ledger-api
@@ -90,4 +90,5 @@ executable exporter
     , plutus-tx-plugin
     , serialise
     , text
+
   hs-source-dirs: exporter

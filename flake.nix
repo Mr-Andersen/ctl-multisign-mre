@@ -47,25 +47,21 @@
             pkgs'.haskell.packages.${onchain.ghcVersion}.cabal-fmt
             pkgs'.haskell.packages.${onchain.ghcVersion}.fourmolu
           ];
-          formatCheck = pkgs.runCommand "format-check"
-            {
-              inherit nativeBuildInputs;
-            }
-            ''
-              cd ${self}
-              make format_check
-              mkdir $out
-            '';
           inherit (pkgs'.lib) concatStringsSep;
           otherBuildInputs = [ pkgs'.bash pkgs'.coreutils pkgs'.findutils pkgs'.gnumake pkgs'.nix ];
           format = pkgs.writeScript "format"
             ''
               export PATH=${concatStringsSep ":" (map (b: "${b}/bin") (otherBuildInputs ++ nativeBuildInputs))}
-              make format
+              export FOURMOLU_EXTENSIONS="-o -XTypeApplications -o -XTemplateHaskell -o -XImportQualifiedPost -o -XPatternSynonyms -o -fplugin=RecordDotPreprocessor"
+              set -x
+              purs-tidy format-in-place $(fd -epurs)
+              fourmolu $FOURMOLU_EXTENSIONS --mode inplace --check-idempotence $(find onchain/{exporter,src} -iregex ".*.hs")
+              nixpkgs-fmt $(fd -enix)
+              cabal-fmt --inplace $(fd -ecabal)
             '';
         in
         {
-          inherit format formatCheck;
+          inherit format;
         }
       ;
 
@@ -225,7 +221,6 @@
         self.onchain.flake.${system}.checks
         // {
           ctl-multisign-mre = self.offchain.project.${system}.runPlutipTest { testMain = "Test"; };
-          inherit (formatCheckFor system) formatCheck;
         }
       );
 

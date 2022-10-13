@@ -57,4 +57,3 @@ cabal.project.local*
 offchain/.spago
 offchain/.spago2nix/
 offchain/output
-offchain/src/ScriptsFFI.js

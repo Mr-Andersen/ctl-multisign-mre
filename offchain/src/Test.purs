@@ -38,18 +38,27 @@ main = launchAff_ do
 
     withKeyWallet alice do
       let
-        wallets = [alice, bob, claire]
+        wallets = [ alice, bob, claire ]
+
+      -- 1. Initialize the script
+
       signers <- for wallets (_ `withKeyWallet` ownPaymentPubKeyHash')
       MultiSign.init (lovelaceValueOf $ BigInt.fromInt 1_000_000) signers
 
-      {lookups, constraints} <- MultiSign.get signers
+      -- 2. Check multisignature
+
+      { lookups, constraints } <- MultiSign.get signers
+
       ubTx <- liftedE $ Lookups.mkUnbalancedTx lookups constraints
       logInfo' "Made unbalanced Tx"
+
       bTx <- liftedE $ map unwrap <$> balanceTx ubTx
       logInfo' "Balanced successfully"
+
       tx <- liftContractM "Unable to sign transaction" =<< signTransaction bTx
       txSigned <- signWith wallets tx
       logInfo' "Signed successfully"
+      
       submit (wrap txSigned) >>= awaitTxConfirmed
 
       pure unit

@@ -23,40 +23,40 @@ import Prelude
 import MultiSign qualified
 
 data ScriptsFFI = ScriptsFFI
-  { js :: String
-  , purs :: String
-  }
+    { js :: String
+    , purs :: String
+    }
 
 -- | Generates target JS and Purs files
 mkScriptsFFI :: [(String, Script)] -> ScriptsFFI
-mkScriptsFFI scripts = ScriptsFFI {js, purs}
+mkScriptsFFI scripts = ScriptsFFI{js, purs}
   where
     purs =
-      unlines $
-        ["module CardanoWanchainBridge.ScriptsFFI (" <> intercalate "," (fst <$> scripts) <> ") where\n"]
-          ++ ((\(rawName, _) -> "foreign import " ++ rawName ++ " :: String") <$> scripts)
+        unlines $
+            ["module CardanoWanchainBridge.ScriptsFFI (" <> intercalate "," (fst <$> scripts) <> ") where\n"]
+                ++ ((\(rawName, _) -> "foreign import " ++ rawName ++ " :: String") <$> scripts)
     js = unlines $ scriptToDeclaration <$> scripts
     scriptToDeclaration (rawName, script) =
-      trace ("generating " <> rawName <> " with hash = " <> show (scriptHash script)) $
-        "exports." <> rawName <> " = " <> show (scriptToString script) <> ";"
+        trace ("generating " <> rawName <> " with hash = " <> show (scriptHash script)) $
+            "exports." <> rawName <> " = " <> show (scriptToString script) <> ";"
     scriptToString =
-      Text.unpack . Text.decodeUtf8 . serialiseToJSON
-        . serialiseToTextEnvelope Nothing
-        . PlutusScriptSerialised @PlutusScriptV2
-        . toShort
-        . toStrict
-        . serialise
+        Text.unpack . Text.decodeUtf8 . serialiseToJSON
+            . serialiseToTextEnvelope Nothing
+            . PlutusScriptSerialised @PlutusScriptV2
+            . toShort
+            . toStrict
+            . serialise
 
 main :: IO ()
 main = do
-  out <- do
-    argOut <- listToMaybe <$> getArgs
-    envOut <- lookupEnv "out"
-    pure $ maybe "." id $ argOut <|> envOut
-  let ScriptsFFI {js} =
-        mkScriptsFFI
-          [ ("rawMultiSign", MultiSign.script)
-          ]
-  writeFile (out <> "/ScriptsFFI.js") js
+    out <- do
+        argOut <- listToMaybe <$> getArgs
+        envOut <- lookupEnv "out"
+        pure $ maybe "." id $ argOut <|> envOut
+    let ScriptsFFI{js} =
+            mkScriptsFFI
+                [ ("rawMultiSign", MultiSign.script)
+                ]
+    writeFile (out <> "/ScriptsFFI.js") js
 
 -- writeFile (out <> "/ScriptsFFI.purs") purs

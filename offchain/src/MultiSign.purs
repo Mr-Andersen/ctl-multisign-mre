@@ -54,21 +54,21 @@ init value signers = do
 
   buildBalanceSignAndSubmitTx lookups constraints >>= awaitTxConfirmed
 
-get :: MultiSignParams -> Contract () {lookups :: ScriptLookups Void, constraints :: TxConstraints Void Void}
+get :: MultiSignParams -> Contract () { lookups :: ScriptLookups Void, constraints :: TxConstraints Void Void }
 get signers = do
   validator <- getValidator signers
   let
     valHash = validatorHash validator
     valAddr = scriptHashAddress valHash
   valUtxos <- liftedM "Failed to get utxosAt MS" $ utxosAt valAddr
-  {key: msUtxo, value: msUtxoResolved} <- liftContractM "utxosAt MS are empty" $ Map.findMin valUtxos
+  { key: msUtxo, value: msUtxoResolved } <- liftContractM "utxosAt MS are empty" $ Map.findMin valUtxos
   let
     lookups = Lookups.validator validator
-                <> Lookups.unspentOutputs valUtxos
+      <> Lookups.unspentOutputs valUtxos
 
     redeemer = Redeemer $ toData signers
     value = msUtxoResolved <# _.output <# _.amount
     constraints = Constraints.mustSpendScriptOutput msUtxo redeemer
-                    <> Constraints.mustPayToScript valHash unitDatum Constraints.DatumInline value
+      <> Constraints.mustPayToScript valHash unitDatum Constraints.DatumInline value
 
-  pure {lookups, constraints}
+  pure { lookups, constraints }
