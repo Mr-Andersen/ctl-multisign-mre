@@ -13,6 +13,8 @@ import Data.BigInt (fromInt) as BigInt
 import Data.UInt (fromInt) as UInt
 import Plutip.Server (runPlutipContract)
 import Plutip.Types (PlutipConfig)
+import Record (modify) as Record
+import Type.Proxy (Proxy(Proxy))
 
 import MultiSign (init, get) as MultiSign
 
@@ -49,12 +51,24 @@ main = launchAff_ do
       { lookups, constraints } <- MultiSign.get signers
 
       ubTx <- liftedE $ Lookups.mkUnbalancedTx lookups constraints
+      let
+        ubTx' =
+          flip applyToInner ubTx $ Record.modify (Proxy :: Proxy "unbalancedTx") $
+            applyToInner $ Record.modify (Proxy :: Proxy "transaction") $
+              applyToInner $ Record.modify (Proxy :: Proxy "body") $
+                applyToInner $ Record.modify (Proxy :: Proxy "requiredSigners") $
+                  const $ Just $ signers <#> unwrap >>> unwrap >>> wrap
       logInfo' "Made unbalanced Tx"
 
-      bTx <- liftedE $ map unwrap <$> balanceTx ubTx
+      bTx <- liftedE $ map unwrap <$> balanceTx ubTx'
+      let
+        bTx' =
+          flip applyToInner bTx $ Record.modify (Proxy :: Proxy "body") $
+            applyToInner $ Record.modify (Proxy :: Proxy "requiredSigners") $
+              const Nothing
       logInfo' "Balanced successfully"
 
-      tx <- liftContractM "Unable to sign transaction" =<< signTransaction bTx
+      tx <- liftContractM "Unable to sign transaction" =<< signTransaction bTx'
       txSigned <- signWith wallets tx
       logInfo' "Signed successfully"
       
@@ -73,6 +87,9 @@ signWith = flip $
     withKeyWallet wallet do
       liftedM "Unable to sign transaction" do
         signTransaction tx
+
+applyToInner :: forall t a. Newtype t a => (a -> a) -> t -> t
+applyToInner f = unwrap >>> f >>> wrap
 
 config :: PlutipConfig
 config =
