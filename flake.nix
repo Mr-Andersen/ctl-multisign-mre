@@ -1,6 +1,6 @@
 {
   inputs = {
-    plutip.url = github:mlabs-haskell/plutip/8364c43ac6bc9ea140412af9a23c691adf67a18b;
+    plutip.url = github:mlabs-haskell/plutip/26ea2fcdb3b426766cb4db43388fe6e886d47262;
     bot-plutus-interface.url = github:mlabs-haskell/bot-plutus-interface/7235aa6fba12b0cf368d9976e1e1b21ba642c038;
     bot-plutus-interface.inputs.cardano-wallet.url = github:sadMaxim/cardano-wallet/9d34b2633ace6aa32c1556d33c8c2df63dbc8f5b;
     plutip.inputs.bot-plutus-interface.follows = "bot-plutus-interface";
